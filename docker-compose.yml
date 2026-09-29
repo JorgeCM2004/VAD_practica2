@@ -1,0 +1,10 @@
+services:
+  vad-no2:
+    build: .
+    image: vad-no2:latest
+    container_name: vad-no2
+    restart: unless-stopped
+    ports:
+      - "8050:8050"
+    mem_limit: 768m
+    cpus: 1.0
