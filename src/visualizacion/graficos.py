@@ -13,7 +13,6 @@ HORAS = list(range(24))
 HORAS_MARCADAS = list(range(0, 24, 3))
 SEPARACION_ETIQUETAS = 0.045
 TOPE_RATIO_DIA = 25
-NOTA_PICO_VALLE = "Máximo ÷ mínimo de las 24 horas de cada línea"
 
 
 class GraficoPlotly:
@@ -45,14 +44,6 @@ class GraficoHorario(GraficoPlotly):
     def __init__(self, datos):
         self.y_max = {escala: math.ceil(maximo / 10) * 10 for escala, maximo in datos.no2_max.items()}
         self.rango = Formato.rango(datos.fecha_inicio, datos.fecha_fin)
-        self.notas = {
-            "dia": "Media de las estaciones de cada tipo en cada hora del día · línea discontinua: "
-                   f"media de los tipos · eje fijo al máximo diario del histórico ({self.y_max['dia']} µg/m³)",
-            "mes": "Media de cada hora a lo largo del mes, laborables y fines de semana · línea "
-                   f"discontinua: media de los tipos · eje fijo al máximo mensual ({self.y_max['mes']} µg/m³)",
-            "total": "Media de cada hora en todo el dataset · línea discontinua: media de los tipos · "
-                     f"eje fijo a {self.y_max['total']} µg/m³",
-        }
 
     def titulo(self, escala, instante):
         """Día, mes o periodo que se está viendo."""
@@ -139,7 +130,6 @@ class GraficoPicoValle(GraficoPlotly):
             "mes": math.ceil(datos.ratio_max["mes"]),
             "total": math.ceil(datos.ratio_max["total"]),
         }
-        self.notas = {escala: NOTA_PICO_VALLE for escala in self.tope}
 
     @staticmethod
     def titulo(amplitud):
@@ -180,7 +170,7 @@ class GraficoPicoValle(GraficoPlotly):
             uirevision="barras",
             xaxis=dict(fixedrange=True, tickfont=dict(color=INK, size=13)),
             yaxis=dict(
-                title="Pico ÷ valle (veces)", range=[0, tope * 1.12], gridcolor=GRID, zeroline=False,
+                title="Pico ÷ valle", range=[0, tope * 1.12], gridcolor=GRID, zeroline=False,
                 fixedrange=True, tickmode="array", tickvals=marcas,
                 ticktext=["0" if v == 0 else f"×{Formato.numero(v, 0 if float(v).is_integer() else 1)}" for v in marcas],
             ),

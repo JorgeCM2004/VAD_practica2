@@ -67,7 +67,6 @@ class CuadroDeMando:
                     options=[{"label": nombre, "value": clave} for clave, nombre in ESCALAS.items()],
                 ),
             ]),
-            html.P(id="nota", className="nota"),
             dcc.Graph(id="grafico", config=SIN_GRAFICO, style={"height": ALTURA_GRAFICO}),
             html.Div(id="reproductor", className="reproductor", children=[
                 html.Button(TEXTO_PLAY, id="play", className="boton boton-play", n_clicks=0,
@@ -87,7 +86,6 @@ class CuadroDeMando:
         return html.Article(className="card card-barras", children=[
             html.P("Del valle al pico", className="card-eyebrow"),
             html.H2(id="titulo-barras"),
-            html.P(id="nota-barras", className="nota"),
             dcc.Graph(id="barras", config=SIN_GRAFICO, responsive=True, className="grafico-flexible"),
         ])
 
@@ -105,7 +103,6 @@ class CuadroDeMando:
                     html.Button("Buscar", id="buscar", className="boton", n_clicks=0),
                 ]),
             ]),
-            html.P(id="nota-mapa", className="nota"),
             html.P(id="estado-busqueda", className="estado-busqueda", **{"aria-live": "polite"}),
             html.Div(className="mapa-cuerpo", children=[
                 html.Div(className="mapa-columna", children=[
@@ -143,9 +140,9 @@ class CuadroDeMando:
             prevent_initial_call=True,
         )(self._avanzar)
         callback(
-            Output("titulo", "children"), Output("nota", "children"), Output("grafico", "figure"),
+            Output("titulo", "children"), Output("grafico", "figure"),
             Output("instante", "data"),
-            Output("titulo-barras", "children"), Output("nota-barras", "children"), Output("barras", "figure"),
+            Output("titulo-barras", "children"), Output("barras", "figure"),
             Input("fecha", "value"), Input("escala", "value"),
         )(self._actualizar_graficos)
         callback(
@@ -157,7 +154,6 @@ class CuadroDeMando:
         )(self._mover_monigote)
         callback(
             Output("capa-estaciones", "children"), Output("leyenda-mapa", "children"),
-            Output("nota-mapa", "children"),
             Input("fecha", "value"), Input("escala", "value"),
         )(self._actualizar_estaciones)
         callback(
@@ -203,11 +199,9 @@ class CuadroDeMando:
         amplitud = self.datos.pico_valle(curvas, media).rename(index=ETIQUETA_TIPO)
         return (
             self.horario.titulo(escala, instante),
-            self.horario.notas[escala],
             self.horario.figura(curvas, media, escala),
             instante.isoformat() if instante is not None else no_update,
             self.pico_valle.titulo(amplitud),
-            self.pico_valle.notas[escala],
             self.pico_valle.figura(amplitud, escala),
         )
 
@@ -231,7 +225,7 @@ class CuadroDeMando:
     def _actualizar_estaciones(self, indice, escala):
         instante = self._momento(indice, escala)
         valores = self.datos.no2_estaciones(escala, instante)
-        return self.mapa.marcadores(valores, escala), self.mapa.leyenda(escala), self.mapa.descripcion(escala, instante)
+        return self.mapa.marcadores(valores, escala), self.mapa.leyenda(escala)
 
     def _inferir_no2(self, posicion, indice, escala, lugar):
         lat, lon = self.mapa.latlon(posicion)

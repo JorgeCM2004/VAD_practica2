@@ -50,7 +50,6 @@ class MapaNO2:
         self.datos = datos
         self.modelo = modelo
         self.vmax = {escala: math.ceil(maximo / 10) * 10 for escala, maximo in datos.no2_estacion_max.items()}
-        self.rango = Formato.rango(datos.fecha_inicio, datos.fecha_fin)
 
     def componente(self):
         """Mapa Leaflet con el mapa base, la capa de estaciones y el monigote en su posición inicial."""
@@ -72,16 +71,6 @@ class MapaNO2:
     def viewport(lat, lon):
         """Vuelo del mapa hasta un sitio buscado."""
         return {"center": [lat, lon], "zoom": ZOOM_BUSQUEDA, "transition": "flyTo"}
-
-    def descripcion(self, escala, instante):
-        """Qué instante muestra el mapa y cómo se usa."""
-        if escala == "dia":
-            cuando = f"del {Formato.dia(instante).lower()}"
-        elif escala == "mes":
-            cuando = f"de {Formato.mes(instante)}"
-        else:
-            cuando = f"de todo el periodo ({self.rango})"
-        return f"NO2 medio {cuando} · arrastra el monigote, haz clic en el mapa o busca una calle"
 
     def marcadores(self, valores, escala):
         """Un círculo por estación, coloreado por su NO2 medio (blanco y discontinuo si no hay dato)."""
