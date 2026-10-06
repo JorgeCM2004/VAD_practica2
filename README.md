@@ -9,6 +9,8 @@ Jorge Camacho Mejías.
 Cuadro de mando interactivo (Dash) sobre las mediciones horarias de NO2 de las estaciones de
 Madrid, con el dataset completo (enero 2025 – agosto 2026).
 
+Desplegado en https://vad.cheesyrat.com.
+
 **Gráfico principal 1: NO2 hora a hora por tipo de estación.** Muestra una línea por tipo
 (tráfico, fondo, suburbana) y la media de los tres en gris discontinuo. Tiene tres escalas:
 
@@ -129,7 +131,7 @@ En el servidor, después de cada cambio:
 git pull && docker compose up -d --build
 ```
 
-Nginx Proxy Manager: *Proxy Host* → `vad.tudominio.com` → `http://<IP-de-la-VM>:8050`, con un
+Nginx Proxy Manager: *Proxy Host* → `vad.cheesyrat.com` → `http://<IP-de-la-VM>:8050`, con un
 certificado de Let's Encrypt y *Force SSL*. Dash funciona sobre HTTP normal y no necesita
 websockets.
 

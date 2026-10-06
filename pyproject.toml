@@ -1,7 +1,7 @@
 [project]
 name = "vad-practica2"
 version = "0.1.0"
-description = "Cuadro de mando interactivo del NO2 en Madrid frente al límite europeo de 2030"
+description = "Cuadro de mando interactivo del NO2 en Madrid"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
