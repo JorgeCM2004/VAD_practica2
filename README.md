@@ -64,29 +64,38 @@ El buscador usa Nominatim (OpenStreetMap), con una petición por segundo como m�
 ```
 ├── 📁 assets
 │   ├── 🎨 estilo.css
-│   └── 📜 mapa.js                 (arrastre del monigote)
+│   └── 📄 mapa.js
 ├── 📁 data
 │   ├── 📄 calidad_aire_2025.csv
 │   ├── 📄 estaciones.csv
-│   └── 📄 vias_principales.csv.gz
+│   └── 📦 vias_principales.csv.gz
 ├── 📁 src
 │   ├── 📁 aplicacion
-│   │   └── 🐍 cuadro_mando.py     (CuadroDeMando: página Dash y callbacks)
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 cuadro_mando.py
 │   ├── 📁 datos
-│   │   ├── 🐍 datos_no2.py        (DatosNO2: carga, limpieza y agregados)
-│   │   └── 🐍 descarga_vias.py    (DescargaVias: descarga única de OSM)
+│   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 datos_no2.py
+│   │   └── 🐍 descarga_vias.py
 │   ├── 📁 modelo
-│   │   └── 🐍 modelo_no2.py       (ModeloNO2: LUR + kriging, validación)
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 modelo_no2.py
 │   ├── 📁 servicios
-│   │   └── 🐍 geocodificador.py   (Geocodificador: buscador de calles)
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 geocodificador.py
 │   ├── 📁 visualizacion
-│   │   ├── 🐍 estilo.py           (paleta, Formato y RampaNO2)
-│   │   ├── 🐍 graficos.py         (GraficoHorario y GraficoPicoValle)
-│   │   └── 🐍 mapa.py             (MapaNO2: estaciones, monigote y panel)
-│   └── 🐍 configuracion.py        (rutas del proyecto)
-├── 🐍 app.py                      (punto de entrada)
+│   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 estilo.py
+│   │   ├── 🐍 graficos.py
+│   │   └── 🐍 mapa.py
+│   ├── 🐍 __init__.py
+│   └── 🐍 configuracion.py
+├── ⚙️ .dockerignore
+├── ⚙️ .gitignore
 ├── 🐳 Dockerfile
-├── 🐳 docker-compose.yml
+├── 📝 README.md
+├── 🐍 app.py
+├── ⚙️ docker-compose.yml
 ├── ⚙️ pyproject.toml
 ├── 📄 requirements.txt
 └── 📄 uv.lock
