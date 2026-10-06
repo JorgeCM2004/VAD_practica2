@@ -27,16 +27,12 @@ out geom;
 
 
 class DescargaVias:
-    """Descarga una sola vez la red de vías principales de Madrid desde OpenStreetMap (Overpass).
+    """Descarga las vías principales de Madrid de OpenStreetMap y guarda un punto cada 25 m.
 
-    Guarda en data/vias_principales.csv.gz un punto cada ~25 m a lo largo de cada vía, con su
-    clase y su nombre; el modelo los usa para medir la distancia de cualquier punto a la vía
-    principal más cercana. Si el servidor principal está saturado prueba con un espejo.
-    Datos © colaboradores de OpenStreetMap (ODbL). Uso: uv run python -m src.datos.descarga_vias
+    Solo hace falta ejecutarlo una vez: uv run python -m src.datos.descarga_vias
     """
 
     def ejecutar(self):
-        """Descarga las vías, las muestrea y guarda el fichero comprimido."""
         vias = self._descargar()
         puntos = self._guardar(vias)
         print(f"{len(vias)} vías -> {puntos} puntos en {SALIDA}")

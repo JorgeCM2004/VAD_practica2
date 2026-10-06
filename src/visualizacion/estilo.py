@@ -16,7 +16,7 @@ MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto
 
 
 class Formato:
-    """Formato en español de cifras, distancias y fechas."""
+    """Números, distancias y fechas en español."""
 
     @staticmethod
     def numero(valor, decimales=1):
@@ -44,14 +44,10 @@ class Formato:
 
 
 class RampaNO2:
-    """Escala de color secuencial del NO2 (ColorBrewer OrRd): claro es poco NO2 y oscuro, mucho.
-
-    La comparten las estaciones del mapa, el monigote, la muestra del panel y la leyenda.
-    """
+    """Escala de color del NO2 (ColorBrewer OrRd) que usan el mapa, el monigote y la leyenda."""
 
     @staticmethod
     def color(valor, maximo):
-        """Color de la rampa para un valor, interpolando linealmente entre sus tramos."""
         posicion = min(max(valor / maximo, 0.0), 1.0) * (len(RAMPA_NO2) - 1)
         tramo = min(int(posicion), len(RAMPA_NO2) - 2)
         inicio, fin = RampaNO2._rgb(RAMPA_NO2[tramo]), RampaNO2._rgb(RAMPA_NO2[tramo + 1])

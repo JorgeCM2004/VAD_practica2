@@ -11,13 +11,10 @@ ESCALAS = {"dia": "Día", "mes": "Mes", "total": "Todo el periodo"}
 
 
 class DatosNO2:
-    """Mediciones horarias de NO2 de Madrid agregadas a tres escalas: día, mes y todo el periodo.
+    """Carga las mediciones de NO2 validadas y calcula las medias por día, mes y periodo completo.
 
-    Al crearse carga el CSV del Ayuntamiento (una fila por estación, magnitud y día, con 24
-    columnas horarias), se queda con las mediciones validadas de NO2 y calcula:
-    - curvas horarias por tipo de estación, para los gráficos de líneas y de barras;
-    - NO2 medio de cada estación, para el mapa y el modelo de inferencia.
-    Cada valor es la media de todas las mediciones válidas del intervalo.
+    Guarda las curvas horarias por tipo de estación (gráficos) y el NO2 medio de cada
+    estación (mapa y modelo).
     """
 
     def __init__(self):
@@ -55,35 +52,30 @@ class DatosNO2:
         }
 
     def instantes(self, escala):
-        """Días o meses que recorre el slider; vacío en la escala "total"."""
+        """Días o meses del slider (vacío en "total")."""
         if escala == "total":
             return pd.DatetimeIndex([])
         return self.perfiles[escala].index
 
     def perfil_tipos(self, escala, instante):
-        """Curva horaria de cada tipo de estación y la media de las tres curvas.
+        """Curva horaria de cada tipo y la media de los tres tipos.
 
-        La media es la de los tipos y no la de las estaciones, para que Suburbana (solo tres
-        estaciones) pese igual que los otros dos tipos. Si a un tipo le falta una hora, la
-        media de esa hora queda vacía en lugar de sesgarse.
+        Se hace la media de los tipos y no de las estaciones para que Suburbana, que solo
+        tiene tres, pese lo mismo que los demás.
         """
         fila = self.perfil_total if escala == "total" else self.perfiles[escala].loc[instante]
         curvas = pd.DataFrame({tipo: fila[tipo].reindex(range(24)) for tipo in TIPOS})
         return curvas, curvas.mean(axis=1, skipna=False)
 
     def no2_estaciones(self, escala, instante):
-        """NO2 medio de cada estación en el instante, en el orden de `estaciones` (NaN sin datos)."""
+        """NO2 medio de cada estación en ese instante (NaN si no hay datos)."""
         tabla = self.no2_estacion[escala]
         valores = tabla if escala == "total" else tabla.loc[instante]
         return valores.reindex(self.estaciones.index)
 
     @staticmethod
     def pico_valle(curvas, media):
-        """Pico, valle, sus horas y cuántas veces se multiplica el NO2 entre ambos, por línea.
-
-        Devuelve una fila por tipo de estación más "Media". Si el valle es 0 el cociente no
-        está definido y queda vacío.
-        """
+        """Pico, valle, sus horas y el cociente pico / valle de cada línea (vacío si el valle es 0)."""
         lineas = curvas.assign(Media=media)
         valle = lineas.min()
         return pd.DataFrame({

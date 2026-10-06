@@ -23,12 +23,7 @@ REINICIOS_OPTIMIZADOR = 3
 
 @dataclass
 class Estimacion:
-    """NO2 estimado en un punto, su intervalo del 90 % y el desglose de cómo se ha obtenido.
-
-    `lur` es el nivel medio de las estaciones por el factor del entorno, `correccion` el
-    kriging de los residuos y `peso_estacion` el peso del anclaje a la estación más cercana
-    con datos (`estacion`, su posición en DatosNO2.estaciones): 1 encima de ella.
-    """
+    """Resultado de inferir(): la estimación, su intervalo del 90% y los pasos intermedios."""
 
     estimacion: float
     bajo: float
@@ -46,7 +41,7 @@ class Estimacion:
 
 @dataclass
 class Validacion:
-    """Error absoluto medio (µg/m³) en medias diarias dejando fuera cada estación, por método."""
+    """Error medio (µg/m³) de cada método al dejar fuera una estación cada vez."""
 
     modelo: float
     lur: float
@@ -56,25 +51,11 @@ class Validacion:
 
 
 class ModeloNO2:
-    """Estima el NO2 en cualquier punto de Madrid combinando LUR, kriging y anclaje a las estaciones.
+    """Estima el NO2 en cualquier punto de Madrid.
 
-    1. Regresión de uso del suelo (Land Use Regression), la técnica estándar en epidemiología
-       para estimar el NO2 que se respira en un domicilio:
-       NO2 = nivel medio de las estaciones en el instante × factor del entorno.
-       El factor lo aprende una regresión lineal a partir de log(1 + distancia a la vía
-       principal urbana más cercana), con los días en que las 23 estaciones tienen datos.
-       Las vías salen de OpenStreetMap (DescargaVias).
-    2. Kriging de los residuos: lo que la LUR no explica en cada estación en ese instante se
-       interpola con un proceso gaussiano cuyo alcance y ruido local se aprenden una sola vez
-       con todos los días.
-    3. Anclaje: junto a una estación manda lo que mide. Su peso es 1 encima de ella y se
-       desvanece hacia los 200 m, la representatividad mínima de una estación de tráfico según
-       la Directiva 2008/50/CE (al menos 100 m de calle).
-
-    La validación deja fuera cada estación, reentrena con las demás y la predice; el intervalo
-    del 90 % sale de los cocientes real / estimado de esa validación. Se descartó un proceso
-    gaussiano solo con coordenadas: no mejoraba a la media de las estaciones, porque las
-    diferencias entre ellas dependen de su entorno y no de su posición.
+    NO2 = nivel medio de las estaciones x factor del entorno (LUR con la distancia a la vía
+    principal más cercana), más un kriging de los residuos. A menos de unos 200 m de una
+    estación la estimación se acerca a lo que mide esa estación.
     """
 
     def __init__(self, datos):
@@ -97,7 +78,7 @@ class ModeloNO2:
 
     @staticmethod
     def a_km(lat, lon):
-        """Proyección plana en km con origen en la Puerta del Sol (error despreciable en la ciudad)."""
+        """Pasa lat/lon a km tomando como origen la Puerta del Sol."""
         lat, lon = np.atleast_1d(lat), np.atleast_1d(lon)
         return np.column_stack([
             (lon - LON_ORIGEN) * KM_POR_GRADO_LON,
@@ -105,20 +86,16 @@ class ModeloNO2:
         ])
 
     def via_cercana(self, lat, lon):
-        """Distancia (km) a la vía principal urbana más cercana y su nombre ("" si no tiene)."""
+        """Distancia (km) y nombre de la vía principal más cercana."""
         distancia, indice = self._arbol_vias.query(self.a_km(lat, lon))
         return float(distancia[0]), self._vias["nombre"].iat[int(indice[0])]
 
     def distancias_km(self, lat, lon):
-        """Distancia (km) del punto a cada estación, en el orden de DatosNO2.estaciones."""
+        """Distancia (km) del punto a cada estación."""
         return np.linalg.norm(self.x_estaciones - self.a_km(lat, lon), axis=1)
 
     def inferir(self, valores, lat, lon):
-        """Estimación del NO2 en (lat, lon) a partir del NO2 medio de cada estación en el instante.
-
-        `valores` va en el orden de DatosNO2.estaciones, con NaN donde no hay dato. Devuelve
-        None si hay demasiado pocas estaciones con datos.
-        """
+        """Estima el NO2 en (lat, lon) con lo que miden las estaciones. None si hay pocas con datos."""
         usadas = valores.notna().values
         if usadas.sum() < MIN_ESTACIONES:
             return None

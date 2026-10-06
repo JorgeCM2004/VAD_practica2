@@ -38,13 +38,7 @@ MANEJADOR_ARRASTRE = {"variable": "vadMapa.soltarMonigote"}
 
 
 class MapaNO2:
-    """Mapa del NO2: estaciones coloreadas, monigote arrastrable y panel con la estimación del modelo.
-
-    Estaciones, monigote, muestra del panel y leyenda usan la misma escala de color, fija en
-    cada escala temporal. El mapa base es el gris del IGN (abierto y sin API key) y no lleva
-    recuadro de atribución encima: las licencias (IGN CC BY 4.0, OSM ODbL) se citan en una
-    línea junto a la leyenda.
-    """
+    """Mapa con las estaciones, el monigote y el panel con la estimación del modelo."""
 
     def __init__(self, datos, modelo):
         self.datos = datos
@@ -52,7 +46,6 @@ class MapaNO2:
         self.vmax = {escala: math.ceil(maximo / 10) * 10 for escala, maximo in datos.no2_estacion_max.items()}
 
     def componente(self):
-        """Mapa Leaflet con el mapa base, la capa de estaciones y el monigote en su posición inicial."""
         return dl.Map(
             id="mapa", center=CENTRO, zoom=ZOOM_INICIAL, className="mapa", attributionControl=False,
             children=[
@@ -69,11 +62,10 @@ class MapaNO2:
 
     @staticmethod
     def viewport(lat, lon):
-        """Vuelo del mapa hasta un sitio buscado."""
         return {"center": [lat, lon], "zoom": ZOOM_BUSQUEDA, "transition": "flyTo"}
 
     def marcadores(self, valores, escala):
-        """Un círculo por estación, coloreado por su NO2 medio (blanco y discontinuo si no hay dato)."""
+        """Un círculo por estación con el color de su NO2 (blanco si no hay dato)."""
         marcadores = []
         for codigo, estacion in self.datos.estaciones.iterrows():
             valor = valores[codigo]
@@ -90,7 +82,6 @@ class MapaNO2:
         return marcadores
 
     def leyenda(self, escala):
-        """Escala de color, significado del monigote y de las estaciones sin dato, y créditos."""
         vmax = self.vmax[escala]
         return [
             html.Span("NO2 medio en las estaciones", className="leyenda-titulo"),
@@ -109,20 +100,17 @@ class MapaNO2:
         ]
 
     def icono(self, estimacion, escala):
-        """Monigote del color de su estimación, o gris si no se ha podido estimar."""
         if estimacion is None:
             return self.icono_monigote(COLOR_SIN_ESTIMACION)
         return self.icono_monigote(RampaNO2.color(estimacion.estimacion, self.vmax[escala]))
 
     def titulo(self, estimacion, lugar, lat, lon):
-        """Frase con el NO2 que se respiraría en el sitio del monigote."""
         if estimacion is None:
             return "No hay suficientes estaciones con datos para estimar"
         sitio = self._sitio(estimacion, lugar, lat, lon)
         return f"En {sitio} respirarías unos {Formato.numero(estimacion.estimacion)} µg/m³ de NO2"
 
     def resumen(self, estimacion, escala):
-        """Cifra estimada con su muestra de color y su intervalo del 90 %."""
         if estimacion is None:
             return html.P("Elige otro día en el slider.", className="nota")
         return [
@@ -141,11 +129,7 @@ class MapaNO2:
         ]
 
     def cabecera_motivos(self):
-        """Encabezado "Por qué" con el icono de información que despliega cómo funciona el modelo.
-
-        Va fijo en el layout, fuera de lo que se redibuja, para que el recuadro siga abierto
-        mientras cambia la estimación.
-        """
+        # Va fuera de "motivos" para que el recuadro no se cierre al cambiar la estimación
         return html.Div(className="por-que", children=[
             html.H3("Por qué"),
             html.Details(className="info", children=[
@@ -155,7 +139,7 @@ class MapaNO2:
         ])
 
     def motivos(self, estimacion, valores, lat, lon):
-        """Por qué sale ese valor, con un aviso si el punto queda lejos de lo que el modelo conoce."""
+        """Lista de por qué sale ese valor, con un aviso si el punto queda muy lejos."""
         if estimacion is None:
             return None
         distancias = self.modelo.distancias_km(lat, lon)
@@ -171,14 +155,13 @@ class MapaNO2:
 
     @staticmethod
     def latlon(posicion):
-        """Posición del monigote como (lat, lon); dash-leaflet la da como lista o como diccionario."""
+        # dash-leaflet a veces la da como lista y otras como diccionario
         if isinstance(posicion, dict):
             return float(posicion["lat"]), float(posicion.get("lng", posicion.get("lon")))
         return float(posicion[0]), float(posicion[1])
 
     @staticmethod
     def icono_monigote(relleno):
-        """Icono SVG del monigote con el relleno indicado y borde oscuro para verse sobre el mapa gris."""
         svg = SVG_MONIGOTE.replace("RELLENO", relleno)
         return {
             "iconUrl": "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode(),

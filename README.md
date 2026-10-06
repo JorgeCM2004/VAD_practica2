@@ -6,58 +6,66 @@ Jorge Camacho Mejías.
 
 ## Contenido
 
-Cuadro de mando interactivo (Dash) sobre las mediciones horarias de NO2 de las estaciones de
-Madrid, con el dataset completo (enero 2025 – agosto 2026).
+Cuadro de mando en Dash con las mediciones horarias de NO2 de las estaciones de Madrid, de enero
+de 2025 a agosto de 2026.
 
 Desplegado en https://vad.cheesyrat.com.
 
-**Gráfico principal 1: NO2 hora a hora por tipo de estación.** Muestra una línea por tipo
-(tráfico, fondo, suburbana) y la media de los tres en gris discontinuo. Tiene tres escalas:
+### Gráfico 1: NO2 hora a hora por tipo de estación
 
-- **Día:** un slider recorre los 608 días y el botón Play los reproduce.
-- **Mes:** 20 meses, con slider y Play.
-- **Todo el periodo:** la media de cada hora en todo el dataset.
+Una línea por tipo de estación (tráfico, fondo y suburbana) y otra discontinua con la media de
+los tres. Se puede ver por día, por mes o la media de todo el periodo. En día y mes hay un slider
+y un botón Play para ir pasando las fechas. El eje Y no cambia dentro de cada escala para que no
+salte al reproducir.
 
-El eje Y es fijo dentro de cada escala, para que no salte al reproducir.
+### Gráfico 2: del valle al pico
 
-**Gráfico principal 2: del valle al pico.** A la derecha del anterior y actualizado con él, muestra
-una barra por línea con cuántas veces se multiplica el NO2 entre su hora más baja y la más alta
-(máximo ÷ mínimo de las 24 horas). En la escala Día el eje llega hasta ×25: algunos días el valle
-baja de 1 µg/m³ y el cociente se dispara (hasta ×68). Esas barras, 19 de 2.432, se recortan y
-muestran su valor real con ▲.
+Está al lado del anterior y cambia con él. Para cada línea muestra cuántas veces es mayor la hora
+más contaminada que la menos contaminada (máximo / mínimo de las 24 horas). En la escala de día el
+eje se corta en 25, porque hay días en los que el mínimo baja de 1 µg/m³ y el cociente llega a 68.
+Solo pasa en 19 de las 2432 barras, y en esas se escribe encima el valor real.
 
-**Mapa: ¿qué NO2 respirarías?** Ocupa todo el ancho. Muestra las 23 estaciones coloreadas por su
-NO2 medio en el instante elegido arriba (día, mes o periodo completo) y un monigote que se puede
-arrastrar, colocar con un clic o llevar a una calle con el buscador. En la posición del monigote
-se estima el NO2 con un modelo de ML (ver abajo), y la estimación se recalcula al cambiar la fecha.
+### Mapa
 
-## Modelo de inferencia (`src/modelo/modelo_no2.py`)
+Las 23 estaciones coloreadas según su NO2 medio en la fecha elegida arriba, y un monigote que se
+puede arrastrar, mover haciendo clic o llevar a una calle con el buscador (Nominatim de
+OpenStreetMap, como mucho una petición por segundo). En el sitio del monigote se estima el NO2 con
+el modelo de abajo.
 
-Es una **regresión de uso del suelo (Land Use Regression)**, la técnica estándar en epidemiología
-para estimar la exposición a NO2 en un domicilio:
+## Modelo
 
-`NO2 estimado = nivel medio de las estaciones en ese instante × factor del entorno`
+Está en `src/modelo/modelo_no2.py`. Es una regresión de uso del suelo (LUR), lo que se suele usar
+para estimar el NO2 en un punto donde no hay estación:
 
-- **Factor del entorno:** una regresión lineal (scikit-learn), entrenada con 23 estaciones y 603
-  días, aprende cómo cambia el nivel relativo persistente de cada estación con
-  log(1 + distancia a la vía principal urbana más cercana). Las vías salen de OpenStreetMap
-  (`src/datos/descarga_vias.py`, `data/vias_principales.csv.gz`).
-- **Kriging de los residuos:** lo que la LUR no explica en cada estación ese día se interpola
-  con un proceso gaussiano, cuyo alcance (~1,9 km) y ruido local se aprenden con todos los días.
-- **Anclaje a las mediciones:** junto a una estación manda lo que mide (peso 1 encima de ella,
-  que se desvanece hacia los 200 m). Así, encima de una estación la estimación coincide con
-  su lectura y el intervalo se cierra.
-- **Intervalo del 90%:** cuantiles del cociente real ÷ estimado en la validación.
-- **Validación (dejando fuera cada estación):** error medio de 3,87 µg/m³ (3,95 con la LUR
-  sola), frente a 4,48 si se usa la media de las estaciones y 5,6 si se usa la estación más
-  cercana.
-- **Descartado:** un proceso gaussiano (kriging) que usaba solo las coordenadas no mejoraba a la
-  media de las estaciones. Las diferencias entre estaciones dependen de su entorno (monte,
-  parque, nudo de tráfico), no de su posición.
-- **Limitaciones:** no conoce el tráfico real de cada calle ni fuentes como el aeropuerto;
-  lejos de las estaciones la estimación es poco fiable y el panel lo avisa.
+```
+NO2 estimado = nivel medio de las estaciones ese día x factor del entorno
+```
 
-El buscador usa Nominatim (OpenStreetMap), con una petición por segundo como máximo y caché.
+El factor del entorno sale de una regresión lineal (scikit-learn) entre el nivel relativo de cada
+estación y log(1 + distancia a la vía principal más cercana). Se entrena con las 23 estaciones y
+los 603 días en los que todas tienen datos. Las vías se descargaron de OpenStreetMap con
+`src/datos/descarga_vias.py` y están guardadas en `data/vias_principales.csv.gz`.
+
+Lo que la regresión no explica en cada estación se interpola con un proceso gaussiano (kriging de
+los residuos), con un alcance de unos 1,9 km. Cerca de una estación (a menos de unos 200 m) la
+estimación se acerca a lo que mide esa estación, y justo encima coincide con ella. El intervalo
+del 90% se calcula con los errores de la validación.
+
+Validación dejando fuera una estación cada vez (error medio en µg/m³):
+
+| Método                  | Error |
+| ----------------------- | ----- |
+| Modelo completo         | 3,87  |
+| Solo LUR                | 3,95  |
+| Media de las estaciones | 4,48  |
+| Estación más cercana    | 5,60  |
+
+También se probó un kriging solo con las coordenadas, pero no mejoraba a la media de las
+estaciones: lo que diferencia a unas estaciones de otras es lo que tienen alrededor (parque, monte,
+tráfico) y no dónde están.
+
+El modelo no sabe cuánto tráfico tiene cada calle ni tiene en cuenta otras fuentes como el
+aeropuerto. Lejos de las estaciones la estimación es poco fiable, y en ese caso el panel lo avisa.
 
 ## Estructura del proyecto
 
@@ -101,8 +109,8 @@ El buscador usa Nominatim (OpenStreetMap), con una petición por segundo como m�
 └── 📄 uv.lock
 ```
 
-`CuadroDeMando` crea una instancia de cada clase y conecta los callbacks: el instante elegido
-en el slider (día, mes o todo el periodo) actualiza a la vez los dos gráficos y el mapa.
+`CuadroDeMando` crea los datos, el modelo y los gráficos y registra los callbacks. Al mover el
+slider se actualizan a la vez los dos gráficos y el mapa.
 
 ## Ejecución local
 
@@ -113,46 +121,35 @@ uv sync
 uv run app.py
 ```
 
-La app queda en http://127.0.0.1:8050. Con `pip`:
+La app se abre en http://127.0.0.1:8050. Con `pip`:
 
 ```bash
 pip install -r requirements.txt
 python app.py
 ```
 
-Para volver a descargar las vías de OpenStreetMap (no hace falta: el fichero ya está en `data/`):
+Para volver a descargar las vías de OpenStreetMap (no hace falta, el fichero ya está en `data/`):
 
 ```bash
 uv run python -m src.datos.descarga_vias
 ```
 
-## Despliegue (Docker)
+## Despliegue
 
 ```bash
 docker compose up -d --build
 ```
 
-Arranca gunicorn en el puerto 8050.
-
-En el servidor, después de cada cambio:
-
-```bash
-git pull && docker compose up -d --build
-```
-
-Nginx Proxy Manager: *Proxy Host* → `vad.cheesyrat.com` → `http://<IP-de-la-VM>:8050`, con un
-certificado de Let's Encrypt y *Force SSL*. Dash funciona sobre HTTP normal y no necesita
-websockets.
+Levanta la app con gunicorn en el puerto 8050.
 
 ## Datos
 
-- Fuente: Portal de Datos Abiertos del Ayuntamiento de Madrid (calidad del aire, datos horarios) y
-  metadatos de las estaciones.
-- Grano: una medición horaria de NO2 por estación. Solo se usan las mediciones validadas (`V`).
-- Vías principales: © colaboradores de OpenStreetMap (ODbL).
-- Mapa base: IGNBase-gris del Instituto Geográfico Nacional (CC BY 4.0), sin API key.
-- La media de la escala "Todo el periodo" cuenta dos veces los meses de enero a agosto (2025 y
-  2026) y una sola vez los de septiembre a diciembre.
+- Calidad del aire (datos horarios) y estaciones: Portal de Datos Abiertos del Ayuntamiento de
+  Madrid. Solo se usan las mediciones validadas (`V`).
+- Vías principales: OpenStreetMap (ODbL).
+- Mapa base: IGNBase-gris del IGN (CC BY 4.0).
+- En "Todo el periodo" los meses de enero a agosto cuentan dos veces (2025 y 2026) y los de
+  septiembre a diciembre solo una.
 
 ## Uso IA
 

@@ -16,11 +16,10 @@ TOPE_RATIO_DIA = 25
 
 
 class GraficoPlotly:
-    """Base de los gráficos Plotly del cuadro de mando: tipografía, fondo transparente y tooltip."""
+    """Layout común de las figuras de Plotly."""
 
     @staticmethod
     def layout(**ajustes):
-        """Layout común de todas las figuras, con los ajustes propios de cada una encima."""
         return {
             "font": dict(family=FONT, size=13, color=INK_2),
             "paper_bgcolor": "rgba(0,0,0,0)",
@@ -32,13 +31,10 @@ class GraficoPlotly:
 
 
 class GraficoHorario(GraficoPlotly):
-    """Gráfico principal 1: NO2 hora a hora por tipo de estación y la media de los tres tipos.
+    """Gráfico 1: NO2 por hora y tipo de estación, con la media en discontinua.
 
-    Colores RGB poco saturados para no competir con el mensaje; rojo y verde cambian también de
-    luminosidad y cada línea lleva una etiqueta directa, para distinguirlas con daltonismo. Las
-    etiquetas comparten `legendgroup` con su línea, así que se ocultan juntas desde la leyenda.
-    El eje Y es fijo en cada escala (máximo histórico redondeado a la decena) para que no salte
-    al reproducir.
+    Cada línea lleva su nombre al final para no depender solo del color. El eje Y es fijo en
+    cada escala para que no salte con el Play.
     """
 
     def __init__(self, datos):
@@ -46,7 +42,6 @@ class GraficoHorario(GraficoPlotly):
         self.rango = Formato.rango(datos.fecha_inicio, datos.fecha_fin)
 
     def titulo(self, escala, instante):
-        """Día, mes o periodo que se está viendo."""
         if escala == "dia":
             return f"{Formato.dia(instante)} · {Formato.tipo_dia(instante)}"
         if escala == "mes":
@@ -54,7 +49,6 @@ class GraficoHorario(GraficoPlotly):
         return f"Todo el periodo · {self.rango}"
 
     def figura(self, curvas, media, escala):
-        """Una línea por tipo de estación, la media discontinua y sus etiquetas directas."""
         y_max = self.y_max[escala]
         series = [(ETIQUETA_TIPO[tipo], curvas[tipo], COLOR_TIPO[tipo], "solid", 2.5) for tipo in TIPOS]
         series.append(("Media", media, COLOR_MEDIA, "dash", 2))
@@ -91,8 +85,7 @@ class GraficoHorario(GraficoPlotly):
 
     @staticmethod
     def marcas_slider(fechas):
-        """Una marca el día 1 de cada mes, con texto solo en los meses impares para que no se
-        amontonen, y el año en enero y en la primera marca."""
+        """Una marca cada día 1 de mes, con texto solo en los meses impares para que no se solapen."""
         marcas = {}
         for indice, fecha in enumerate(fechas):
             if fecha.day != 1 and indice != 0:
@@ -116,12 +109,10 @@ class GraficoHorario(GraficoPlotly):
 
 
 class GraficoPicoValle(GraficoPlotly):
-    """Gráfico principal 2: cuántas veces se multiplica el NO2 del valle al pico en cada línea.
+    """Gráfico 2: máximo / mínimo de las 24 horas de cada línea.
 
-    Cada barra es el máximo entre el mínimo de las 24 horas de su línea, con el mismo color y
-    siempre en el mismo orden para que no bailen al reproducir. El eje es fijo por escala; en
-    "dia" se recorta en ×25 porque algunos días el valle baja de 1 µg/m³ y el cociente se
-    dispara (hasta ×68): esas pocas barras se cortan en el tope y muestran su valor real con ▲.
+    En la escala de día el eje se corta en 25 porque algunos días el mínimo es casi 0; esas
+    barras llevan su valor real escrito encima.
     """
 
     def __init__(self, datos):
@@ -133,14 +124,12 @@ class GraficoPicoValle(GraficoPlotly):
 
     @staticmethod
     def titulo(amplitud):
-        """Qué tipo de estación se multiplica más del valle al pico."""
         tipos = amplitud.drop(index="Media")["ratio"].dropna()
         if tipos.empty:
             return "Sin datos suficientes para este periodo"
         return f"{tipos.idxmax()} es la que más se multiplica: ×{Formato.numero(tipos.max())} del valle al pico"
 
     def figura(self, amplitud, escala):
-        """Barras pico ÷ valle con su valor escrito y el detalle de pico y valle en el tooltip."""
         tope = self.tope[escala]
         nombres = list(amplitud.index)
         ratio = amplitud["ratio"]

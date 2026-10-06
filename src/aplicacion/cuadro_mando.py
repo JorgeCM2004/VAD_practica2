@@ -19,12 +19,7 @@ SIN_GRAFICO = {"displayModeBar": False}
 
 
 class CuadroDeMando:
-    """Cuadro de mando del NO2 en Madrid (Demo Day 2).
-
-    Une en una página Dash el gráfico hora a hora por tipo de estación, el gráfico del valle al
-    pico y el mapa con la estimación del modelo, y registra los callbacks que los mantienen
-    sincronizados con el instante elegido (día, mes o todo el periodo) en el slider.
-    """
+    """Página Dash con los dos gráficos y el mapa, sincronizados con el slider."""
 
     def __init__(self):
         self.datos = DatosNO2()

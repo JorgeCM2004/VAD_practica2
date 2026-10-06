@@ -14,12 +14,7 @@ TAMANO_CACHE = 256
 
 
 class Geocodificador:
-    """Busca direcciones de Madrid con Nominatim (OpenStreetMap).
-
-    Respeta su política de uso: como máximo una petición por segundo, un User-Agent que
-    identifica la aplicación, búsqueda solo al pulsar Buscar (nada de autocompletar) y
-    resultados en caché.
-    """
+    """Buscador de calles de Madrid con Nominatim (una petición por segundo como máximo y caché)."""
 
     def __init__(self):
         self._candado = threading.Lock()
@@ -27,10 +22,7 @@ class Geocodificador:
         self._buscar_en_cache = lru_cache(maxsize=TAMANO_CACHE)(self._consultar)
 
     def buscar(self, texto):
-        """(lat, lon, nombre corto) del primer resultado dentro de Madrid, o None si no hay.
-
-        Lanza OSError si el servicio no responde.
-        """
+        """Devuelve (lat, lon, nombre) o None. Lanza OSError si Nominatim no responde."""
         normalizado = " ".join(texto.split()).lower()
         return self._buscar_en_cache(normalizado) if normalizado else None
 
